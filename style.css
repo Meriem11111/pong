@@ -1,6 +1,13 @@
- body {
- text-align: center;   
- background-color: #222;  /* optional background */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #222;
+    
+    /* Center everything */
+    display: flex;
+    justify-content: center;  /* Horizontal center */
+    align-items: center;      /* Vertical center */
+    min-height: 100vh;        /* Full viewport height */
 }
 
 
