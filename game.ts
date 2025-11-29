@@ -11,6 +11,13 @@ window.onload = function() {
     board.width = boardWidth;
     contex = board.getContext("2d");
 
-    
+    drawRec(0, 0, board.width, board.height);
 
+}
+
+function drawRec(x: number, y: number, w:number, h:number)
+{
+    if (!contex) return;
+    contex.fillStyle = "#490f5eff";
+    contex.fillRect(x, y, w, h);
 }

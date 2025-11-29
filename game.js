@@ -8,4 +8,11 @@ window.onload = function () {
     board.height = boardHeight;
     board.width = boardWidth;
     contex = board.getContext("2d");
+    drawRec(0, 0, board.width, board.height);
 };
+function drawRec(x, y, w, h) {
+    if (!contex)
+        return;
+    contex.fillStyle = "#490f5eff";
+    contex.fillRect(x, y, w, h);
+}
