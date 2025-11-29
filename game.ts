@@ -11,4 +11,6 @@ window.onload = function() {
     board.width = boardWidth;
     contex = board.getContext("2d");
 
+    
+
 }
