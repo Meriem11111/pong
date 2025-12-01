@@ -8,6 +8,7 @@ let contex : CanvasRenderingContext2D | null = null;
 const paddleWidth: number = 15; 
 const paddleHeight: number = 80;
 const paddleSpeed: number = 6; 
+let gameStart : boolean = false;
 
 
 let player1 = {
@@ -39,7 +40,7 @@ const ball = {
     y : boardHeight/2,
     radius : 15,
     color: "white",
-    stepX : 3,
+    stepX : 5,
     stepY : 5,
 };
 
@@ -67,6 +68,7 @@ window.onload = function() {
     draw();
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
+    
 
 }
 
@@ -77,6 +79,11 @@ function handleKeyDown(event: KeyboardEvent)//key pressed
     {
         keys[event.key] = true;
     }
+    if(event.code === "Space")
+    {
+        if(!gameStart)
+            gameStart = true;
+    }
     
 }
 
@@ -86,6 +93,7 @@ function handleKeyUp(event: KeyboardEvent) // key released
     {
         keys[event.key] = false;
     }
+   
 }
 
 function movePlayer()
@@ -106,55 +114,58 @@ function movePlayer()
 
 function moveBall()
 {
-    ball.x += ball.stepX;
-    ball.y += ball.stepY;
 
-    // if(ball.x + ball.radius > boardWidth)
-    //     ball.stepX = - ball.stepX;
+    if(gameStart )
+    {
+        ball.x += ball.stepX;
+        ball.y += ball.stepY;
 
-    if(ball.y + ball.radius > boardHeight || ball.y - ball.radius < 0)
-        ball.stepY = - ball.stepY;
+        // if(ball.x + ball.radius > boardWidth)
+        //     ball.stepX = - ball.stepX;
+
+        if(ball.y + ball.radius > boardHeight || ball.y - ball.radius < 0)
+            ball.stepY = - ball.stepY;
+            
+            // detectCollision(player1, ball );
+            // detectCollision(player2, ball );
+
+        if(ball.stepX < 0)
+        {
+            if(ball.x - ball.radius  <= player1.x + paddleWidth && ball.x > player1.x 
+                && ball.y >= player1.y && ball.y <= player1.y + paddleHeight)
+            {
+                ball.stepX = Math.abs(ball.stepX);
+                ball.x = ball.radius + player1.x + paddleWidth;
+                let hitPos = (ball.y - player1.y) / paddleHeight;
+                ball.stepY = (hitPos - 0.5) * 10;
+            }
+        }
         
-        // detectCollision(player1, ball );
-        // detectCollision(player2, ball );
-
-    if(ball.stepX < 0)
-    {
-        if(ball.x - ball.radius  <= player1.x + paddleWidth && ball.x > player1.x 
-            && ball.y >= player1.y && ball.y <= player1.y + paddleHeight)
+        if(ball.stepX > 0)
         {
-            ball.stepX = Math.abs(ball.stepX);
-            ball.x = ball.radius + player1.x + paddleWidth;
-            let hitPos = (ball.y - player1.y) / paddleHeight;
-            ball.stepY = (hitPos - 0.5) * 10;
+            if(ball.x + ball.radius  >= player2.x  && ball.x < player2.x + paddleWidth 
+                && ball.y >= player2.y && ball.y <= player2.y + paddleHeight)
+            {
+                ball.stepX = -Math.abs(ball.stepX);
+                ball.x = player2.x - ball.radius;
+                let hitPos = (ball.y - player2.y) / paddleHeight;
+                ball.stepY = (hitPos - 0.5) * 10;
+            }
+        }
+
+        // hndle scores
+
+        if(ball.x - ball.radius <= 0)
+        {
+            player1.score++;
+            resetBall();
+        }
+        else if(ball.x + ball.radius >= boardWidth)
+        {
+            player2.score++;
+            resetBall();
         }
     }
-    
-    if(ball.stepX > 0)
-    {
-        if(ball.x + ball.radius  >= player2.x  && ball.x < player2.x + paddleWidth 
-            && ball.y >= player2.y && ball.y <= player2.y + paddleHeight)
-        {
-            ball.stepX = -Math.abs(ball.stepX);
-            ball.x = player2.x - ball.radius;
-            let hitPos = (ball.y - player2.y) / paddleHeight;
-            ball.stepY = (hitPos - 0.5) * 10;
-        }
-    }
-
-    // hndle scores
-
-    if(ball.x - ball.radius <= 0)
-    {
-        player1.score++;
-        resetBall();
-    }
-    else if(ball.x + ball.radius >= boardWidth)
-    {
-        player2.score++;
-        resetBall();
-    }
-
        
 }
 
@@ -164,7 +175,7 @@ function  resetBall()
     ball.y = boardHeight/2;
 
     ball.stepX = player1.score > player2.score ? 5 : -5;
-    ball.stepY = (Math.random() < 0.5 ? -2 : 2);
+    ball.stepY = (Math.random() < 0.5 ? -5 : 5);
 
 }
 
