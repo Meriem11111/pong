@@ -10,6 +10,8 @@ var gameStart = false;
 var countDown = 3;
 var gameCountDown = false;
 var gameGO = false;
+var winner = null;
+var maxScore = 3;
 var player1 = {
     x: 20,
     y: boardHeight / 2 - paddleHeight / 2,
@@ -67,10 +69,13 @@ function handleKeyDown(event) {
     if (event.key in keys) {
         keys[event.key] = true;
     }
-    if (event.code === "Space" && !gameStart && !gameCountDown) {
+    if (event.code === "Space" && !gameStart && !gameCountDown && !winner) {
         // gameStart = true;
         gameCountDown = true;
         handleCountDown();
+    }
+    if (event.code === "Space" && !gameStart && !gameCountDown && winner) {
+        restartGame();
     }
 }
 function handleCountDown() {
@@ -138,14 +143,42 @@ function moveBall() {
         }
         // hndle scores
         if (ball.x - ball.radius <= 0) {
-            player1.score++;
-            resetBall();
-        }
-        else if (ball.x + ball.radius >= boardWidth) {
             player2.score++;
             resetBall();
+            checkWinner();
+        }
+        else if (ball.x + ball.radius >= boardWidth) {
+            player1.score++;
+            resetBall();
+            checkWinner();
         }
     }
+}
+function checkWinner() {
+    if (player1.score == maxScore) {
+        winner = "player1";
+        gameStart = false;
+        // player1.score = 0;
+    }
+    else if (player2.score == maxScore) {
+        winner = "player2";
+        gameStart = false;
+        // player2.score = 0;
+    }
+}
+function restartGame() {
+    player1.score = 0;
+    player2.score = 0;
+    ball.x = boardWidth / 2;
+    ball.y = boardHeight / 2;
+    ball.stepX = 5;
+    ball.stepY = 5;
+    player1.y = boardHeight / 2 - paddleHeight / 2;
+    player2.y = boardHeight / 2 - paddleHeight / 2;
+    winner = null;
+    countDown = 3;
+    gameCountDown = true;
+    handleCountDown();
 }
 function resetBall() {
     ball.x = boardWidth / 2;
@@ -159,27 +192,12 @@ function draw() {
     drawBoard(0, 0, board.width, board.height);
     drawRect(player1.x, player1.y, paddleWidth, paddleHeight, player1.color);
     drawRect(player2.x, player2.y, paddleWidth, paddleHeight, player2.color);
-    // drawRect(net.x, net.y, net.width, net.height, net.color);
     drawNet();
     drawBall(ball.x, ball.y, ball.radius, ball.color);
     drawScore(score.x_l, score.y, player1.score, score.color);
     drawScore(score.x_r, score.y, player2.score, score.color);
-    if (countDown) {
-        if (!contex)
-            return;
-        contex.fillStyle = "black";
-        contex.font = "90px Arial";
-        contex.textAlign = "center";
-        contex.fillText(countDown.toString(), boardWidth / 2, boardHeight / 2);
-    }
-    if (gameGO) {
-        if (!contex)
-            return;
-        contex.fillStyle = "black";
-        contex.font = "150px Arial";
-        contex.textAlign = "center";
-        contex.fillText("Go!", boardWidth / 2, boardHeight / 2);
-    }
+    drawCountDown();
+    drawWinner();
     requestAnimationFrame(draw);
 }
 function drawBoard(x, y, w, h) {
@@ -223,4 +241,57 @@ function drawScore(x, y, score, color) {
     contex.font = "48px Arial";
     contex.textAlign = "center";
     contex.fillText(score.toString(), x, y);
+}
+function drawCountDown() {
+    if (countDown) {
+        if (!contex)
+            return;
+        contex.fillStyle = "rgba(0, 0, 0, 0.7)";
+        contex.fillRect(0, 0, boardWidth, boardHeight);
+        contex.fillStyle = "white";
+        contex.font = "bold 150px Arial";
+        contex.textAlign = "center";
+        contex.textBaseline = "middle";
+        contex.fillText(countDown.toString(), boardWidth / 2, boardHeight / 2);
+        contex.shadowBlur = 15;
+        contex.fillStyle = "white";
+        contex.font = "30px Arial";
+        contex.fillText("GET READY", boardWidth / 2, boardHeight / 2 - 100);
+        contex.shadowBlur = 0;
+    }
+    if (gameGO) {
+        if (!contex)
+            return;
+        contex.fillStyle = "rgba(0, 0, 0, 0.7)";
+        contex.fillRect(0, 0, boardWidth, boardHeight);
+        contex.shadowBlur = 40;
+        contex.shadowColor = "#8f37f3ff";
+        contex.font = "bold 180px Arial";
+        contex.textAlign = "center";
+        contex.textBaseline = "middle";
+        contex.fillText("GO!", boardWidth / 2, boardHeight / 2);
+        contex.shadowBlur = 0;
+    }
+}
+function drawWinner() {
+    if (!contex || !winner)
+        return;
+    contex.fillStyle = "rgba(0, 0, 0, 0.85)";
+    contex.fillRect(0, 0, boardWidth, boardHeight);
+    contex.shadowBlur = 20;
+    contex.shadowColor = "#0244bdff";
+    contex.fillStyle = "white";
+    contex.font = "bold 70px Arial";
+    contex.textAlign = "center";
+    contex.textBaseline = "middle";
+    contex.fillText("".concat(winner, " WINS!"), boardWidth / 2, boardHeight / 2 - 50);
+    contex.shadowBlur = 15;
+    contex.fillStyle = "white";
+    contex.font = "40px Arial";
+    contex.fillText("".concat(player1.score, " - ").concat(player2.score), boardWidth / 2, boardHeight / 2 + 30);
+    contex.shadowBlur = 10;
+    contex.fillStyle = "white";
+    contex.font = "25px Arial";
+    contex.fillText("Press Space to play again", boardWidth / 2, boardHeight / 2 + 100);
+    contex.shadowBlur = 0;
 }
