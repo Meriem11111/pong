@@ -214,14 +214,11 @@ function checkWinner()
     {
         winner = "player1";
         gameStart = false;
-        // player1.score = 0;
-
     }
     else if(player2.score == maxScore)
     {
         winner = "player2";
         gameStart = false;
-        // player2.score = 0;
     }
 }
 
@@ -273,6 +270,10 @@ function draw() {
     drawScore(score.x_r, score.y, player2.score, score.color);
     drawCountDown();
     drawWinner();
+    if(!gameStart && !gameCountDown && !winner)
+    {
+        drawStart();
+    }
    
 
     requestAnimationFrame(draw);
@@ -332,7 +333,7 @@ function drawScore(x: number, y:number, score: number, color: string)
 
 function drawCountDown()
 {
-     if(countDown)
+    if(countDown)
     {
         if (!contex) return;
         contex.fillStyle = "rgba(0, 0, 0, 0.7)";
@@ -358,6 +359,7 @@ function drawCountDown()
         contex.shadowBlur = 40;
         contex.shadowColor = "#8f37f3ff";
         contex.font = "bold 180px Arial";
+        contex.fillStyle = "white";
         contex.textAlign = "center";
         contex.textBaseline = "middle";
         contex.fillText("GO!", boardWidth / 2, boardHeight / 2);
@@ -389,10 +391,30 @@ function drawWinner()
     contex.shadowBlur = 10;
     contex.fillStyle = "white";
     contex.font = "25px Arial";
-    contex.fillText("Press Space to play again", boardWidth / 2, boardHeight / 2 + 100);
+    contex.fillText("Press SPACE to play again", boardWidth / 2, boardHeight / 2 + 100);
     
     contex.shadowBlur = 0;
 
 
 }
     
+
+function drawStart()
+{
+    if (!contex) return;
+    contex.fillStyle = "rgba(0, 0, 0, 1)";
+    contex.fillRect(0, 0, boardWidth, boardHeight);
+    contex.shadowBlur = 20;
+    contex.shadowColor = "#9e58eeff";
+    contex.fillStyle = "white";
+    contex.font = "40px Arial";
+    contex.textAlign = "center";
+    contex.textBaseline = "middle";
+    contex.fillText("Press SPACE to Start ", boardWidth / 2, boardHeight / 2);
+
+    contex.font = "20px Arial";
+    contex.fillStyle = "white";
+    contex.fillText("Player 1: W/S | Player 2: ↑/↓", boardWidth / 2, boardHeight / 2 + 50);
+    
+    contex.shadowBlur = 0;
+}
