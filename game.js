@@ -5,6 +5,7 @@ var boardHeight = 450;
 var contex = null;
 var paddleWidth = 15;
 var paddleHeight = 80;
+var paddleSpeed = 6;
 var playerVelocityX = 0;
 var playerVelocityY = 0;
 var player1 = {
@@ -12,16 +13,14 @@ var player1 = {
     y: boardHeight / 2 - paddleHeight / 2,
     color: "#0f3460",
     score: 0,
-    variation: 10,
-    speed: 5,
+    step: 1,
 };
 var player2 = {
     x: boardWidth - 20 - paddleWidth,
     y: boardHeight / 2 - paddleHeight / 2,
     color: "#0f3460",
     score: 0,
-    variation: 10,
-    speed: 5,
+    step: 1,
 };
 var net = {
     x: boardWidth / 2 - 10 / 2,
@@ -35,6 +34,8 @@ var ball = {
     y: boardHeight / 2,
     radius: 15,
     color: "white",
+    stepX: 3,
+    stepY: 5,
 };
 var score = {
     x_l: boardWidth / 4,
@@ -64,7 +65,6 @@ function handleKeyDown(event) {
     if (event.key in keys) {
         keys[event.key] = true;
     }
-    movePlayer();
 }
 function handleKeyUp(event) {
     if (event.key in keys) {
@@ -74,16 +74,61 @@ function handleKeyUp(event) {
 function movePlayer() {
     //p1
     if ((keys['w'] || keys['W']) && player1.y > 0)
-        player1.y -= player1.variation * player1.speed;
+        player1.y -= player1.step * paddleSpeed;
     if ((keys['s'] || keys['S']) && player1.y < boardHeight - paddleHeight)
-        player1.y += player1.variation * player1.speed;
+        player1.y += player1.step * paddleSpeed;
     //p2
     if (keys['ArrowUp'] && player2.y > 0)
-        player2.y -= player2.variation * player2.speed;
+        player2.y -= player2.step * paddleSpeed;
     if (keys['ArrowDown'] && player2.y < boardHeight - paddleHeight)
-        player2.y += player2.variation * player2.speed;
+        player2.y += player2.step * paddleSpeed;
+}
+function moveBall() {
+    ball.x += ball.stepX;
+    ball.y += ball.stepY;
+    // if(ball.x + ball.radius > boardWidth)
+    //     ball.stepX = - ball.stepX;
+    if (ball.y + ball.radius > boardHeight || ball.y - ball.radius < 0)
+        ball.stepY = -ball.stepY;
+    // detectCollision(player1, ball );
+    // detectCollision(player2, ball );
+    if (ball.stepX < 0) {
+        if (ball.x - ball.radius <= player1.x + paddleWidth && ball.x > player1.x
+            && ball.y >= player1.y && ball.y <= player1.y + paddleHeight) {
+            ball.stepX = Math.abs(ball.stepX);
+            ball.x = ball.radius + player1.x + paddleWidth;
+            var hitPos = (ball.y - player1.y) / paddleHeight;
+            ball.stepY = (hitPos - 0.5) * 10;
+        }
+    }
+    if (ball.stepX > 0) {
+        if (ball.x + ball.radius >= player2.x && ball.x < player2.x + paddleWidth
+            && ball.y >= player2.y && ball.y <= player2.y + paddleHeight) {
+            ball.stepX = -Math.abs(ball.stepX);
+            ball.x = player2.x - ball.radius;
+            var hitPos = (ball.y - player2.y) / paddleHeight;
+            ball.stepY = (hitPos - 0.5) * 10;
+        }
+    }
+    // hndle scores
+    if (ball.x - ball.radius <= 0) {
+        player1.score++;
+        resetBall();
+    }
+    else if (ball.x + ball.radius >= boardWidth) {
+        player2.score++;
+        resetBall();
+    }
+}
+function resetBall() {
+    ball.x = boardWidth / 2;
+    ball.y = boardHeight / 2;
+    ball.stepX = player1.score > player2.score ? 5 : -5;
+    ball.stepY = (Math.random() < 0.5 ? -2 : 2);
 }
 function draw() {
+    movePlayer();
+    moveBall();
     drawBoard(0, 0, board.width, board.height);
     drawRect(player1.x, player1.y, paddleWidth, paddleHeight, player1.color);
     drawRect(player2.x, player2.y, paddleWidth, paddleHeight, player2.color);
