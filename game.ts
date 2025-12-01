@@ -216,30 +216,12 @@ function draw() {
     drawBoard(0, 0, board.width, board.height);
     drawRect(player1.x, player1.y, paddleWidth, paddleHeight, player1.color);
     drawRect(player2.x, player2.y, paddleWidth, paddleHeight, player2.color);
-    // drawRect(net.x, net.y, net.width, net.height, net.color);
     drawNet();
     drawBall(ball.x, ball.y, ball.radius, ball.color);
     drawScore(score.x_l, score.y, player1.score, score.color);
     drawScore(score.x_r, score.y, player2.score, score.color);
-
-    if(countDown)
-    {
-        if (!contex) return;
-        contex.fillStyle = "black";
-        contex.font = "90px Arial";
-        contex.textAlign = "center"; 
-        contex.fillText(countDown.toString(), boardWidth/2, boardHeight/2);
-           
-
-    }
-    if(gameGO)
-    {
-        if (!contex) return;
-        contex.fillStyle = "black";
-        contex.font = "150px Arial";
-        contex.textAlign = "center"; 
-        contex.fillText("Go!", boardWidth/2, boardHeight/2);
-    }
+    drawCountDown();
+   
 
     requestAnimationFrame(draw);
 }
@@ -294,4 +276,26 @@ function drawScore(x: number, y:number, score: number, color: string)
     contex.font = "48px Arial";
     contex.textAlign = "center"; 
     contex.fillText(score.toString(), x, y);
+}
+
+function drawCountDown()
+{
+     if(countDown)
+    {
+        if (!contex) return;
+        contex.fillStyle = "black";
+        contex.font = "90px Arial";
+        contex.textAlign = "center"; 
+        contex.fillText(countDown.toString(), boardWidth/2, boardHeight/2);
+           
+
+    }
+    if(gameGO)
+    {
+        if (!contex) return;
+        contex.fillStyle = "black";
+        contex.font = "150px Arial";
+        contex.textAlign = "center"; 
+        contex.fillText("Go!", boardWidth/2, boardHeight/2);
+    }
 }
