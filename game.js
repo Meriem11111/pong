@@ -9,6 +9,7 @@ var paddleSpeed = 6;
 var gameStart = false;
 var countDown = 3;
 var gameCountDown = false;
+var gameGO = false;
 var player1 = {
     x: 20,
     y: boardHeight / 2 - paddleHeight / 2,
@@ -78,8 +79,12 @@ function handleCountDown() {
             countDown--;
             if (countDown <= 0) {
                 clearInterval(timer_1);
-                gameCountDown = false;
-                gameStart = true;
+                gameGO = true;
+                setTimeout(function () {
+                    gameGO = false;
+                    gameCountDown = false;
+                    gameStart = true;
+                }, 1000);
             }
         }, 1000);
     }
@@ -166,6 +171,14 @@ function draw() {
         contex.font = "90px Arial";
         contex.textAlign = "center";
         contex.fillText(countDown.toString(), boardWidth / 2, boardHeight / 2);
+    }
+    if (gameGO) {
+        if (!contex)
+            return;
+        contex.fillStyle = "black";
+        contex.font = "150px Arial";
+        contex.textAlign = "center";
+        contex.fillText("Go!", boardWidth / 2, boardHeight / 2);
     }
     requestAnimationFrame(draw);
 }

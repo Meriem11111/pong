@@ -11,6 +11,7 @@ const paddleSpeed: number = 6;
 let gameStart : boolean = false;
 let countDown = 3;
 let gameCountDown : boolean = false;
+let gameGO : boolean = false;
 
 
 let player1 = {
@@ -100,9 +101,12 @@ function handleCountDown()
             if(countDown <= 0)
             {
                 clearInterval(timer);
+                gameGO = true;
+                setTimeout(() => { 
+                gameGO = false;
                 gameCountDown = false;
-                gameStart = true;
-
+                gameStart = true;}, 1000);
+                
             }
             
         }, 1000);
@@ -221,12 +225,20 @@ function draw() {
     if(countDown)
     {
         if (!contex) return;
-            contex.fillStyle = "black";
-            contex.font = "90px Arial";
-            contex.textAlign = "center"; 
-            contex.fillText(countDown.toString(), boardWidth/2, boardHeight/2);
+        contex.fillStyle = "black";
+        contex.font = "90px Arial";
+        contex.textAlign = "center"; 
+        contex.fillText(countDown.toString(), boardWidth/2, boardHeight/2);
            
 
+    }
+    if(gameGO)
+    {
+        if (!contex) return;
+        contex.fillStyle = "black";
+        contex.font = "150px Arial";
+        contex.textAlign = "center"; 
+        contex.fillText("Go!", boardWidth/2, boardHeight/2);
     }
 
     requestAnimationFrame(draw);
