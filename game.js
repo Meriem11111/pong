@@ -7,6 +7,8 @@ var paddleWidth = 15;
 var paddleHeight = 80;
 var paddleSpeed = 6;
 var gameStart = false;
+var countDown = 3;
+var gameCountDown = false;
 var player1 = {
     x: 20,
     y: boardHeight / 2 - paddleHeight / 2,
@@ -64,9 +66,22 @@ function handleKeyDown(event) {
     if (event.key in keys) {
         keys[event.key] = true;
     }
-    if (event.code === "Space") {
-        if (!gameStart)
-            gameStart = true;
+    if (event.code === "Space" && !gameStart && !gameCountDown) {
+        // gameStart = true;
+        gameCountDown = true;
+        handleCountDown();
+    }
+}
+function handleCountDown() {
+    if (gameCountDown) {
+        var timer_1 = setInterval(function () {
+            countDown--;
+            if (countDown <= 0) {
+                clearInterval(timer_1);
+                gameCountDown = false;
+                gameStart = true;
+            }
+        }, 1000);
     }
 }
 function handleKeyUp(event) {
@@ -75,30 +90,30 @@ function handleKeyUp(event) {
     }
 }
 function movePlayer() {
-    //p1
-    if ((keys['w'] || keys['W']) && player1.y > 0)
-        player1.y -= player1.step * paddleSpeed;
-    if ((keys['s'] || keys['S']) && player1.y < boardHeight - paddleHeight)
-        player1.y += player1.step * paddleSpeed;
-    //p2
-    if (keys['ArrowUp'] && player2.y > 0)
-        player2.y -= player2.step * paddleSpeed;
-    if (keys['ArrowDown'] && player2.y < boardHeight - paddleHeight)
-        player2.y += player2.step * paddleSpeed;
+    if (gameStart) {
+        //p1
+        if ((keys['w'] || keys['W']) && player1.y > 0)
+            player1.y -= player1.step * paddleSpeed;
+        else if ((keys['s'] || keys['S']) && player1.y < boardHeight - paddleHeight)
+            player1.y += player1.step * paddleSpeed;
+        //p2
+        if (keys['ArrowUp'] && player2.y > 0)
+            player2.y -= player2.step * paddleSpeed;
+        else if (keys['ArrowDown'] && player2.y < boardHeight - paddleHeight)
+            player2.y += player2.step * paddleSpeed;
+    }
 }
 function moveBall() {
-    if (gameStart) {
+    if (gameStart && !gameCountDown) {
         ball.x += ball.stepX;
         ball.y += ball.stepY;
-        // if(ball.x + ball.radius > boardWidth)
-        //     ball.stepX = - ball.stepX;
         if (ball.y + ball.radius > boardHeight || ball.y - ball.radius < 0)
             ball.stepY = -ball.stepY;
-        // detectCollision(player1, ball );
-        // detectCollision(player2, ball );
         if (ball.stepX < 0) {
-            if (ball.x - ball.radius <= player1.x + paddleWidth && ball.x > player1.x
-                && ball.y >= player1.y && ball.y <= player1.y + paddleHeight) {
+            if (ball.x - ball.radius <= player1.x + paddleWidth &&
+                ball.x - ball.radius > player1.x &&
+                ball.y + ball.radius >= player1.y &&
+                ball.y - ball.radius <= player1.y + paddleHeight) {
                 ball.stepX = Math.abs(ball.stepX);
                 ball.x = ball.radius + player1.x + paddleWidth;
                 var hitPos = (ball.y - player1.y) / paddleHeight;
@@ -106,8 +121,10 @@ function moveBall() {
             }
         }
         if (ball.stepX > 0) {
-            if (ball.x + ball.radius >= player2.x && ball.x < player2.x + paddleWidth
-                && ball.y >= player2.y && ball.y <= player2.y + paddleHeight) {
+            if (ball.x + ball.radius >= player2.x &&
+                ball.x + ball.radius < player2.x + paddleWidth &&
+                ball.y + ball.radius >= player2.y &&
+                ball.y - ball.radius <= player2.y + paddleHeight) {
                 ball.stepX = -Math.abs(ball.stepX);
                 ball.x = player2.x - ball.radius;
                 var hitPos = (ball.y - player2.y) / paddleHeight;
@@ -142,6 +159,14 @@ function draw() {
     drawBall(ball.x, ball.y, ball.radius, ball.color);
     drawScore(score.x_l, score.y, player1.score, score.color);
     drawScore(score.x_r, score.y, player2.score, score.color);
+    if (countDown) {
+        if (!contex)
+            return;
+        contex.fillStyle = "black";
+        contex.font = "90px Arial";
+        contex.textAlign = "center";
+        contex.fillText(countDown.toString(), boardWidth / 2, boardHeight / 2);
+    }
     requestAnimationFrame(draw);
 }
 function drawBoard(x, y, w, h) {

@@ -9,6 +9,8 @@ const paddleWidth: number = 15;
 const paddleHeight: number = 80;
 const paddleSpeed: number = 6; 
 let gameStart : boolean = false;
+let countDown = 3;
+let gameCountDown : boolean = false;
 
 
 let player1 = {
@@ -79,12 +81,32 @@ function handleKeyDown(event: KeyboardEvent)//key pressed
     {
         keys[event.key] = true;
     }
-    if(event.code === "Space")
+    if(event.code === "Space" && !gameStart && !gameCountDown)
     {
-        if(!gameStart)
-            gameStart = true;
+            // gameStart = true;
+            gameCountDown = true;
+            handleCountDown();   
     }
     
+}
+
+function handleCountDown()
+{
+    if(gameCountDown)
+    {
+        let timer = setInterval(() => {
+
+            countDown--;
+            if(countDown <= 0)
+            {
+                clearInterval(timer);
+                gameCountDown = false;
+                gameStart = true;
+
+            }
+            
+        }, 1000);
+    }
 }
 
 function handleKeyUp(event: KeyboardEvent) // key released
@@ -98,41 +120,40 @@ function handleKeyUp(event: KeyboardEvent) // key released
 
 function movePlayer()
 {
-    //p1
-    if((keys['w'] || keys['W'] ) && player1.y > 0)
-        player1.y -= player1.step * paddleSpeed;
-    if((keys['s'] || keys['S']) && player1.y < boardHeight - paddleHeight)
-        player1.y += player1.step * paddleSpeed;
+    if(gameStart )
+    {
+        //p1
+        if((keys['w'] || keys['W'] ) && player1.y > 0)
+            player1.y -= player1.step * paddleSpeed;
+        else if((keys['s'] || keys['S']) && player1.y < boardHeight - paddleHeight)
+            player1.y += player1.step * paddleSpeed;
 
-    //p2
+        //p2
 
-    if(keys['ArrowUp'] && player2.y > 0)
-        player2.y -= player2.step * paddleSpeed;
-    if(keys['ArrowDown'] && player2.y < boardHeight - paddleHeight)
-        player2.y +=  player2.step * paddleSpeed;
+        if(keys['ArrowUp'] && player2.y > 0)
+            player2.y -= player2.step * paddleSpeed;
+        else if(keys['ArrowDown'] && player2.y < boardHeight - paddleHeight)
+            player2.y +=  player2.step * paddleSpeed;
+    }
 }
 
 function moveBall()
 {
 
-    if(gameStart )
+    if(gameStart && !gameCountDown)
     {
         ball.x += ball.stepX;
         ball.y += ball.stepY;
 
-        // if(ball.x + ball.radius > boardWidth)
-        //     ball.stepX = - ball.stepX;
-
         if(ball.y + ball.radius > boardHeight || ball.y - ball.radius < 0)
             ball.stepY = - ball.stepY;
             
-            // detectCollision(player1, ball );
-            // detectCollision(player2, ball );
-
         if(ball.stepX < 0)
         {
-            if(ball.x - ball.radius  <= player1.x + paddleWidth && ball.x > player1.x 
-                && ball.y >= player1.y && ball.y <= player1.y + paddleHeight)
+            if(ball.x - ball.radius <= player1.x + paddleWidth && 
+           ball.x - ball.radius > player1.x &&
+           ball.y + ball.radius >= player1.y && 
+           ball.y - ball.radius <= player1.y + paddleHeight)
             {
                 ball.stepX = Math.abs(ball.stepX);
                 ball.x = ball.radius + player1.x + paddleWidth;
@@ -143,8 +164,10 @@ function moveBall()
         
         if(ball.stepX > 0)
         {
-            if(ball.x + ball.radius  >= player2.x  && ball.x < player2.x + paddleWidth 
-                && ball.y >= player2.y && ball.y <= player2.y + paddleHeight)
+            if(ball.x + ball.radius >= player2.x && 
+           ball.x + ball.radius < player2.x + paddleWidth &&
+           ball.y + ball.radius >= player2.y && 
+           ball.y - ball.radius <= player2.y + paddleHeight)
             {
                 ball.stepX = -Math.abs(ball.stepX);
                 ball.x = player2.x - ball.radius;
@@ -180,8 +203,6 @@ function  resetBall()
 }
 
 
-
-
 function draw() {
 
     movePlayer();
@@ -196,6 +217,17 @@ function draw() {
     drawBall(ball.x, ball.y, ball.radius, ball.color);
     drawScore(score.x_l, score.y, player1.score, score.color);
     drawScore(score.x_r, score.y, player2.score, score.color);
+
+    if(countDown)
+    {
+        if (!contex) return;
+            contex.fillStyle = "black";
+            contex.font = "90px Arial";
+            contex.textAlign = "center"; 
+            contex.fillText(countDown.toString(), boardWidth/2, boardHeight/2);
+           
+
+    }
 
     requestAnimationFrame(draw);
 }
