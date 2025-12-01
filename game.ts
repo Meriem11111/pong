@@ -80,7 +80,7 @@ window.onload = function() {
 
 }
 
-function handleKeyDown(event: KeyboardEvent)//key pressed
+function handleKeyDown(event: KeyboardEvent)
 {
     event.preventDefault();
     if(event.key in keys)
@@ -123,7 +123,7 @@ function handleCountDown()
     }
 }
 
-function handleKeyUp(event: KeyboardEvent) // key released
+function handleKeyUp(event: KeyboardEvent)
 {
     if(event.key in keys)
     {
@@ -394,10 +394,7 @@ function drawWinner()
     contex.fillText("Press SPACE to play again", boardWidth / 2, boardHeight / 2 + 100);
     
     contex.shadowBlur = 0;
-
-
 }
-    
 
 function drawStart()
 {
