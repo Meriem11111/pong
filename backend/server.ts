@@ -3,31 +3,41 @@ import fastifyCors from "@fastify/cors";
 import { Server as SocketIOServer } from "socket.io";  
 
 const server = Fastify({
-    logger : true
+    logger: true
 });
 
-server.get("/", async(request, reply) =>{
-    return {message : "Hello THERE !!"};
+server.get("/", async(request, reply) => {
+    return {message: "Hello THERE !!"};
 });
 
 await server.register(fastifyCors, {
-  origin: "http://localhost:3000", // Your frontend URL
-  credentials: true
+   origin: true,
+    credentials: true
 });
 
-const gameSocket = new SocketIOServer(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
+await server.listen({ port: 3001, host: '0.0.0.0' });
+
+const gameSocket = new SocketIOServer(server.server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
 });
 
-gameSocket.on("connect", (socket) => {
-    console.log("Client connected: ", socket.id);
+// Listen for connection
+gameSocket.on("connection", (socket) => {  
+    console.log("✅ Client connected:", socket.id);
+
+    // Listen for "hello" event from client
+    socket.on("hello", (msg) => {
+        console.log("📨 Received from client:", msg);
+        socket.emit("reply", "Hello from server!");
+    });
+
+    // Listen for disconnect 
+    socket.on("disconnect", () => {
+        console.log("⚠️ Client disconnected:", socket.id);
+    });
 });
 
-gameSocket.on("disconnect", () => {
-    console.log("Client disconnected: " , socket.id);
-});
-
-server.listen({port : 3001});
+console.log("🚀 Server running on http://localhost:3001");
