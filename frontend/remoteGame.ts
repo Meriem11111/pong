@@ -4,7 +4,7 @@ let socket : Socket | null = null;
 
 function connectServer()
 {
-    socket = io("http://localhost:3000");
+    socket = io("http://localhost:3001");
 
     socket.on("connect", () => {
         console.log("CONNECTED! socket Id ::", socket.id);

@@ -1,5 +1,6 @@
 import Fastify from "fastify";
-import {io, Socket} from "socket.io-client";
+import fastifyCors from "@fastify/cors";
+import { Server as SocketIOServer } from "socket.io";  
 
 const server = Fastify({
     logger : true
@@ -9,8 +10,24 @@ server.get("/", async(request, reply) =>{
     return {message : "Hello THERE !!"};
 });
 
-const gameSocket : Socket | null = null;
+await server.register(fastifyCors, {
+  origin: "http://localhost:3000", // Your frontend URL
+  credentials: true
+});
 
-gameSocket.on("connect")
+const gameSocket = new SocketIOServer(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
 
-server.listen({port : 3000});
+gameSocket.on("connect", (socket) => {
+    console.log("Client connected: ", socket.id);
+});
+
+gameSocket.on("disconnect", () => {
+    console.log("Client disconnected: " , socket.id);
+});
+
+server.listen({port : 3001});
