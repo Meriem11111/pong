@@ -23,13 +23,13 @@ function connectServer() {
         console.log("Server replied:", msg);
     });
 
-    socket.on("gameStart", (data: { roomId: string, playerNumber: number }) => {
+    socket.on("gameStart", (data: { roomID: string, role: string }) => {
         console.log("🎮 Game found!");
-        console.log("   Room:", data.roomId);
-        console.log("   I am Player:", data.playerNumber);
+        console.log("   Room:", data.roomID);
+        console.log("   I am Player:", data.role);
         
-        // myRoomId = data.roomId;
-        // myPlayerNumber = data.playerNumber;
+        let myRoomId = data.roomID;
+        let myRole = data.role;
         
         // TODO: Show game screen 
     });

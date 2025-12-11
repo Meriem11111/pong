@@ -41,6 +41,7 @@ gameSocket.on("connection", (socket) => {
     socket.on("findGame", () => {
     if(waitingPlayers.length >= 2)
     {
+        console.log("🔍 Player looking for game:", socket.id);
         
         if (waitingPlayers[0] && waitingPlayers[1]) {
             let newRoomID = generateRoomID();
