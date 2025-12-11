@@ -10,6 +10,8 @@ function connectServer() {
     socket.on("connect", () => {
         console.log("CONNECTED! socket Id ::", socket?.id);
         socket?.emit("hello", "Hi server!"); 
+
+        socket?.emit("findGame");
        
     });
 
@@ -17,7 +19,20 @@ function connectServer() {
         console.log("Server replied:", msg);
     });
     
-    
+    socket.on("gameStart", (msg) => {
+        console.log("Server replied:", msg);
+    });
+
+    socket.on("gameStart", (data: { roomId: string, playerNumber: number }) => {
+        console.log("🎮 Game found!");
+        console.log("   Room:", data.roomId);
+        console.log("   I am Player:", data.playerNumber);
+        
+        // myRoomId = data.roomId;
+        // myPlayerNumber = data.playerNumber;
+        
+        // TODO: Show game screen 
+    });
 
     socket.on("disconnect", () => {
         console.log("DISCONNECTED! socket Id ::", socket?.id);
