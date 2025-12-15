@@ -61,6 +61,15 @@ const gameState={
 
 }
 
+const keys: {[key:string] : boolean}={
+    'w' : false,
+    's' : false,
+    'W' : false,
+    'S' : false,
+    'ArrowUp' : false,
+    'ArrowDown' : false,
+}
+
 function connectServer() {
     socket = io("http://localhost:3001");
 
@@ -103,6 +112,36 @@ window.onload = function() {
     board.height = boardHeight;
     board.width = boardWidth;
     contex = board.getContext("2d");
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
+
+
+}
+
+function handleKeyDown(event: KeyboardEvent)
+{
+    event.preventDefault();
+    if(event.key in keys)
+    {
+        keys[event.key] = true;
+        socket?.emit("keydown", event.key);
+    }
+    // if(event.code === "Space" && !gameStart && !gameCountDown && !winner)
+    // {
+    //         // gameStart = true;
+    //         gameCountDown = true;
+    //         handleCountDown();   
+    // }
+
+}
+
+function handleKeyUp(event: KeyboardEvent)
+{
+    if(event.key in keys)
+    {
+        keys[event.key] = false;
+    }
 }
 
 function startGameLoop()
@@ -135,14 +174,11 @@ function draw() {
 function drawBoard(x: number, y: number, w:number, h:number)
 {
     if (!contex) return;
-    // contex.fillStyle = "#490f5eff";
     contex.fillStyle = "#15152bff";
     contex.beginPath();
     contex.fillRect(x, y, w, h);
 }
- // draw paddle
-
-
+// draw paddle
 function drawRect(x: number, y: number, w:number, h:number, color:string)
 {
     if (!contex) return;

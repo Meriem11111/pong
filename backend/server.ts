@@ -2,10 +2,12 @@ import Fastify from "fastify";
 import fastifyCors from "@fastify/cors";
 import { Server as SocketIOServer } from "socket.io";  
 
-const waitingPlayers : string[] = [];
+let waitingPlayers : string[] = [];
 export const gameRooms = new Map<string, { player1: string, player2: string }>();
 
 
+
+async function startServer() {
 const server = Fastify({
     logger: true
 });
@@ -39,11 +41,13 @@ gameSocket.on("connection", (socket) => {
     waitingPlayers.push(socket.id);
     console.log("All player IDs connected : ", waitingPlayers);
     socket.on("findGame", () => {
+        console.log("🔍 Player looking for game:", socket.id);
     if(waitingPlayers.length >= 2)
     {
-        console.log("🔍 Player looking for game:", socket.id);
         
-        if (waitingPlayers[0] && waitingPlayers[1]) {
+        
+        if (waitingPlayers[0] && waitingPlayers[1]) 
+        {
             let newRoomID = generateRoomID();
             while (gameRooms.has(newRoomID)) {
                newRoomID = generateRoomID();
@@ -69,6 +73,16 @@ gameSocket.on("connection", (socket) => {
         console.log(room?.player2);
         console.log("New room created:", newRoomID, gameRooms.get(newRoomID));
 
+         // listen for keyevents
+        player1Socket?.on("keydown", (key) => {
+            console.log("📨 the key received from player1 is : ", key);
+
+        });
+        player2Socket?.on("keydown", (key) => {
+            console.log("📨 the key received from player2 is : ", key);
+
+        });
+        
 
         }
 
@@ -81,20 +95,20 @@ gameSocket.on("connection", (socket) => {
     socket.on("hello", (msg) => {
         console.log("📨 Received from client:", msg);
         socket.emit("reply", "Hello from server!");
+});
 
-
-        
-
-
-    });
+   
 
     // Listen for disconnect 
     socket.on("disconnect", () => {
         console.log("⚠️ Client disconnected:", socket.id);
-        waitingPlayers.filter(id => id !== socket.id);
+        waitingPlayers = waitingPlayers.filter(id => id !== socket.id);
         console.log("All player IDs after disconnect:", waitingPlayers);
 
     });
 });
 
 console.log("🚀 Server running on http://localhost:3001");
+}
+
+startServer(); 
