@@ -99,6 +99,16 @@ function connectServer() {
         startGameLoop();
     });
 
+    socket.on("updateGame",  (data: { player1_Y: number, player2_Y: number }) => {
+        console.log("🎮 Game Updated!");
+        
+        gameState.player1_Y = data.player1_Y;
+        gameState.player2_Y = data.player2_Y;
+        gameState.inGame = true;
+        
+     
+    });
+
     socket.on("disconnect", () => {
         console.log("DISCONNECTED! socket Id ::", socket?.id);
     });

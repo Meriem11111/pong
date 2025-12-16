@@ -14,6 +14,7 @@ const player1_keys : string[] =['s', 'S', 'W', 'w'];
 const player2_keys : string[] =['ArrowUp', 'ArrowDown'];
 
 interface GameState {
+    roomID : string;
     player1: string;
     player2: string;
     player1_Y: number;
@@ -26,6 +27,8 @@ interface GameState {
     score2: number;
     gameActive: boolean;
 }
+
+const games_stats = new Map<string, GameState>();
 
 async function startServer() {
 const server = Fastify({
@@ -55,22 +58,62 @@ function generateRoomID() : string {
 
 }
 
+//Paddle movements
 
-function movePLayer(player: "player1" | "player2", key:string)
+function movePLayer(player: "player1" | "player2", key:string, room_id:string)
 {
+    const currentGame = games_stats.get(room_id);
+    if(!currentGame)
+    {
+        console.log("THE ROOM IS NOT FOUND !!");
+        return;
+    }
     const step = 6;
     if(player === "player1")
     {
-        if((key === 'W' || key === 'w') && gameState.player1_Y > 0)
+        if((key === 'W' || key === 'w') && currentGame.player1_Y > 0)
         {
-            gameState.player1_Y -= step;
+            currentGame.player1_Y -= step;
         }
-        else if((key === 's' || key === 'S' ) && gameState.player1_Y < boardHeight - paddleHeight){
-            gameState.player1_Y += step;
+        else if((key === 's' || key === 'S' ) && currentGame.player1_Y < boardHeight - paddleHeight){
+            currentGame.player1_Y += step;
         }
-            
-
     }
+    else  if(player === "player2")
+    {
+        if((key === 'arrowUp' ) && currentGame.player2_Y > 0)
+        {
+            currentGame.player2_Y -= step;
+        }
+        else if((key === 'arrowDown' ) && currentGame.player2_Y < boardHeight - paddleHeight){
+            currentGame.player2_Y += step;
+        }
+    }
+    gameSocket.to(room_id).emit("updateGame", {
+        player1_y : currentGame.player1_Y,
+        player_y : currentGame.player2_Y,
+    });
+}
+
+function init_gameState(room: string , player_1: string, player_2: string)
+{
+    const game = {
+    roomID : room,
+    player1: player_1,
+    player2: player_2,
+    player1_Y: boardHeight / 2 - paddleHeight / 2,
+    player2_Y: boardHeight / 2 - paddleHeight / 2,
+    ballX: boardWidth/2,
+    ballY:  boardHeight/2,
+    ballStepX: 5,
+    ballStepY: 5,
+    score1: 0,
+    score2: 0,
+    gameActive: true,
+    };
+
+    games_stats.set(room, game);
+    
 }
 
 // Listen for connection
@@ -110,13 +153,15 @@ gameSocket.on("connection", (socket) => {
         console.log(room?.player1);
         console.log(room?.player2);
         console.log("New room created:", newRoomID, gameRooms.get(newRoomID));
+        if( player1Socket &&  player2Socket)
+            init_gameState(newRoomID, player1Socket.id , player1Socket.id);
 
          // listen for keyevents
         player1Socket?.on("keydown", (key) => {
             if(room?.player1 &&  player1_keys.includes(key))
             {
                 console.log("📨 the key received from player1 is : ", key);
-                movePLayer("player1", key);
+                movePLayer("player1", key, newRoomID);
             }
 
         });
@@ -124,11 +169,12 @@ gameSocket.on("connection", (socket) => {
               if(room?.player1 && player2_keys.includes(key))
             {
                 console.log("📨 the key received from player2 is : ", key);
-                movePLayer("player2", key);
+                movePLayer("player2", key, newRoomID);
 
             }
 
         });
+
         
 
         }
