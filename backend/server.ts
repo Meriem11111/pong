@@ -1,11 +1,31 @@
 import Fastify from "fastify";
 import fastifyCors from "@fastify/cors";
 import { Server as SocketIOServer } from "socket.io";  
+// import gameState from "../frontend/remoteGame.js"
 
 let waitingPlayers : string[] = [];
 export const gameRooms = new Map<string, { player1: string, player2: string }>();
+const boardHeight: number = 450;
+const paddleWidth: number = 15; 
+const paddleHeight: number = 80;
+const boardWidth: number = 900;
 
+const player1_keys : string[] =['s', 'S', 'W', 'w'];
+const player2_keys : string[] =['ArrowUp', 'ArrowDown'];
 
+interface GameState {
+    player1: string;
+    player2: string;
+    player1_Y: number;
+    player2_Y: number;
+    ballX: number;
+    ballY: number;
+    ballStepX: number;
+    ballStepY: number;
+    score1: number;
+    score2: number;
+    gameActive: boolean;
+}
 
 async function startServer() {
 const server = Fastify({
@@ -33,6 +53,24 @@ const gameSocket = new SocketIOServer(server.server, {
 function generateRoomID() : string {
     return `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+}
+
+
+function movePLayer(player: "player1" | "player2", key:string)
+{
+    const step = 6;
+    if(player === "player1")
+    {
+        if((key === 'W' || key === 'w') && gameState.player1_Y > 0)
+        {
+            gameState.player1_Y -= step;
+        }
+        else if((key === 's' || key === 'S' ) && gameState.player1_Y < boardHeight - paddleHeight){
+            gameState.player1_Y += step;
+        }
+            
+
+    }
 }
 
 // Listen for connection
@@ -75,11 +113,20 @@ gameSocket.on("connection", (socket) => {
 
          // listen for keyevents
         player1Socket?.on("keydown", (key) => {
-            console.log("📨 the key received from player1 is : ", key);
+            if(room?.player1 &&  player1_keys.includes(key))
+            {
+                console.log("📨 the key received from player1 is : ", key);
+                movePLayer("player1", key);
+            }
 
         });
         player2Socket?.on("keydown", (key) => {
-            console.log("📨 the key received from player2 is : ", key);
+              if(room?.player1 && player2_keys.includes(key))
+            {
+                console.log("📨 the key received from player2 is : ", key);
+                movePLayer("player2", key);
+
+            }
 
         });
         

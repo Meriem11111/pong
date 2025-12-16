@@ -40,79 +40,120 @@ exports.gameRooms = void 0;
 var fastify_1 = require("fastify");
 var cors_1 = require("@fastify/cors");
 var socket_io_1 = require("socket.io");
+var remoteGame_js_1 = require("../frontend/remoteGame.js");
 var waitingPlayers = [];
 exports.gameRooms = new Map();
-var server = (0, fastify_1.default)({
-    logger: true
-});
-server.get("/", function (request, reply) { return __awaiter(void 0, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        return [2 /*return*/, { message: "Hello THERE !!" }];
-    });
-}); });
-await server.register(cors_1.default, {
-    origin: true,
-    credentials: true
-});
-await server.listen({ port: 3001, host: '0.0.0.0' });
-var gameSocket = new socket_io_1.Server(server.server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
-function generateRoomID() {
-    return "room_".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 9));
-}
-// Listen for connection
-gameSocket.on("connection", function (socket) {
-    console.log("✅ Client connected:", socket.id);
-    waitingPlayers.push(socket.id);
-    console.log("All player IDs connected : ", waitingPlayers);
-    socket.on("findGame", function () {
-        if (waitingPlayers.length >= 2) {
-            console.log("🔍 Player looking for game:", socket.id);
-            if (waitingPlayers[0] && waitingPlayers[1]) {
-                var newRoomID = generateRoomID();
-                while (exports.gameRooms.has(newRoomID)) {
-                    newRoomID = generateRoomID();
+var boardHeight = 450;
+var paddleWidth = 15;
+var paddleHeight = 80;
+var boardWidth = 900;
+var player1_keys = ['s', 'S', 'W', 'w'];
+var player2_keys = ['ArrowUp', 'ArrowDown'];
+function startServer() {
+    return __awaiter(this, void 0, void 0, function () {
+        function generateRoomID() {
+            return "room_".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 9));
+        }
+        function movePLayer(player, key) {
+            var step = 6;
+            if (player === "player1") {
+                if ((key === 'W' || key === 'w') && remoteGame_js_1.gameState.player1_Y > 0) {
+                    remoteGame_js_1.gameState.player1_Y -= step;
                 }
-                console.log("new ROOM_ID ::::  ", newRoomID);
-                exports.gameRooms.set(newRoomID, {
-                    player1: waitingPlayers[0],
-                    player2: waitingPlayers[1]
-                });
-                var player1Socket = gameSocket.sockets.sockets.get(waitingPlayers[0]);
-                var player2Socket = gameSocket.sockets.sockets.get(waitingPlayers[1]);
-                player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.join(newRoomID);
-                player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.join(newRoomID);
-                player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.emit("gameStart", { roomID: newRoomID, role: "player1" });
-                player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.emit("gameStart", { roomID: newRoomID, role: "player2" });
-                waitingPlayers.splice(0, 2);
-                var room = exports.gameRooms.get(newRoomID);
-                console.log(room === null || room === void 0 ? void 0 : room.player1);
-                console.log(room === null || room === void 0 ? void 0 : room.player2);
-                console.log("New room created:", newRoomID, exports.gameRooms.get(newRoomID));
-                // listen for keyevents
-                player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.on("keydown", function (key) {
-                    console.log("📨 the key received from player1 is : ", key);
-                });
-                player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.on("keydown", function (key) {
-                    console.log("📨 the key received from player2 is : ", key);
-                });
+                else if ((key === 's' || key === 'S') && remoteGame_js_1.gameState.player1_Y < boardHeight - paddleHeight) {
+                    remoteGame_js_1.gameState.player1_Y += step;
+                }
             }
         }
+        var server, gameSocket;
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    server = (0, fastify_1.default)({
+                        logger: true
+                    });
+                    server.get("/", function (request, reply) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            return [2 /*return*/, { message: "Hello THERE !!" }];
+                        });
+                    }); });
+                    return [4 /*yield*/, server.register(cors_1.default, {
+                            origin: true,
+                            credentials: true
+                        })];
+                case 1:
+                    _a.sent();
+                    return [4 /*yield*/, server.listen({ port: 3001, host: '0.0.0.0' })];
+                case 2:
+                    _a.sent();
+                    gameSocket = new socket_io_1.Server(server.server, {
+                        cors: {
+                            origin: "*",
+                            methods: ["GET", "POST"]
+                        }
+                    });
+                    // Listen for connection
+                    gameSocket.on("connection", function (socket) {
+                        console.log("✅ Client connected:", socket.id);
+                        waitingPlayers.push(socket.id);
+                        console.log("All player IDs connected : ", waitingPlayers);
+                        socket.on("findGame", function () {
+                            console.log("🔍 Player looking for game:", socket.id);
+                            if (waitingPlayers.length >= 2) {
+                                if (waitingPlayers[0] && waitingPlayers[1]) {
+                                    var newRoomID = generateRoomID();
+                                    while (exports.gameRooms.has(newRoomID)) {
+                                        newRoomID = generateRoomID();
+                                    }
+                                    console.log("new ROOM_ID ::::  ", newRoomID);
+                                    exports.gameRooms.set(newRoomID, {
+                                        player1: waitingPlayers[0],
+                                        player2: waitingPlayers[1]
+                                    });
+                                    var player1Socket = gameSocket.sockets.sockets.get(waitingPlayers[0]);
+                                    var player2Socket = gameSocket.sockets.sockets.get(waitingPlayers[1]);
+                                    player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.join(newRoomID);
+                                    player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.join(newRoomID);
+                                    player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.emit("gameStart", { roomID: newRoomID, role: "player1" });
+                                    player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.emit("gameStart", { roomID: newRoomID, role: "player2" });
+                                    waitingPlayers.splice(0, 2);
+                                    var room_1 = exports.gameRooms.get(newRoomID);
+                                    console.log(room_1 === null || room_1 === void 0 ? void 0 : room_1.player1);
+                                    console.log(room_1 === null || room_1 === void 0 ? void 0 : room_1.player2);
+                                    console.log("New room created:", newRoomID, exports.gameRooms.get(newRoomID));
+                                    // listen for keyevents
+                                    player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.on("keydown", function (key) {
+                                        if ((room_1 === null || room_1 === void 0 ? void 0 : room_1.player1) && player1_keys.includes(key)) {
+                                            console.log("📨 the key received from player1 is : ", key);
+                                            movePLayer("player1", key);
+                                        }
+                                    });
+                                    player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.on("keydown", function (key) {
+                                        if ((room_1 === null || room_1 === void 0 ? void 0 : room_1.player1) && player2_keys.includes(key)) {
+                                            console.log("📨 the key received from player2 is : ", key);
+                                            movePLayer("player2", key);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                        // Listen for "hello" event from client
+                        socket.on("hello", function (msg) {
+                            console.log("📨 Received from client:", msg);
+                            socket.emit("reply", "Hello from server!");
+                        });
+                        // Listen for disconnect 
+                        socket.on("disconnect", function () {
+                            console.log("⚠️ Client disconnected:", socket.id);
+                            waitingPlayers = waitingPlayers.filter(function (id) { return id !== socket.id; });
+                            console.log("All player IDs after disconnect:", waitingPlayers);
+                        });
+                    });
+                    console.log("🚀 Server running on http://localhost:3001");
+                    return [2 /*return*/];
+            }
+        });
     });
-    // Listen for "hello" event from client
-    socket.on("hello", function (msg) {
-        console.log("📨 Received from client:", msg);
-        socket.emit("reply", "Hello from server!");
-    });
-    // Listen for disconnect 
-    socket.on("disconnect", function () {
-        console.log("⚠️ Client disconnected:", socket.id);
-        waitingPlayers.filter(function (id) { return id !== socket.id; });
-        console.log("All player IDs after disconnect:", waitingPlayers);
-    });
-});
-console.log("🚀 Server running on http://localhost:3001");
+}
+startServer();

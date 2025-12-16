@@ -60,6 +60,7 @@ const gameState={
     score2 : 0,
 
 }
+// export default gameState;
 
 const keys: {[key:string] : boolean}={
     'w' : false,
