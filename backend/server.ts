@@ -81,17 +81,17 @@ function movePLayer(player: "player1" | "player2", key:string, room_id:string)
     }
     else  if(player === "player2")
     {
-        if((key === 'arrowUp' ) && currentGame.player2_Y > 0)
+        if((key === 'ArrowUp' ) && currentGame.player2_Y > 0)
         {
             currentGame.player2_Y -= step;
         }
-        else if((key === 'arrowDown' ) && currentGame.player2_Y < boardHeight - paddleHeight){
+        else if((key === 'ArrowDown' ) && currentGame.player2_Y < boardHeight - paddleHeight){
             currentGame.player2_Y += step;
         }
     }
     gameSocket.to(room_id).emit("updateGame", {
-        player1_y : currentGame.player1_Y,
-        player_y : currentGame.player2_Y,
+        player1_Y : currentGame.player1_Y,
+        player2_Y : currentGame.player2_Y,
     });
 }
 

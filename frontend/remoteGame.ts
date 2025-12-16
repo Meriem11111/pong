@@ -105,6 +105,7 @@ function connectServer() {
         gameState.player1_Y = data.player1_Y;
         gameState.player2_Y = data.player2_Y;
         gameState.inGame = true;
+        startGameLoop();
         
      
     });
