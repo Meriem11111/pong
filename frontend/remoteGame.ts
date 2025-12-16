@@ -194,7 +194,9 @@ function draw() {
     // }
    
 
-    requestAnimationFrame(draw);
+    if (gameState.inGame) { 
+        requestAnimationFrame(draw);
+    }
 }
 function drawBoard(x: number, y: number, w:number, h:number)
 {

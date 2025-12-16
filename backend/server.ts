@@ -260,7 +260,7 @@ gameSocket.on("connection", (socket) => {
         console.log("New room created:", newRoomID, gameRooms.get(newRoomID));
         if( player1Socket &&  player2Socket)
         {
-            init_gameState(newRoomID, player1Socket.id , player1Socket.id);
+            init_gameState(newRoomID, player1Socket.id , player2Socket.id);
             startGameLoop(newRoomID);
         }
 
