@@ -16,6 +16,7 @@ const player1_X : number = 20;
 const player2_X : number = boardWidth - 20 - paddleWidth;
 const player1_keys : string[] =['s', 'S', 'W', 'w'];
 const player2_keys : string[] =['ArrowUp', 'ArrowDown'];
+const maxScore : number = 3;
 
 interface GameState {
     roomID : string;
@@ -30,6 +31,7 @@ interface GameState {
     score1: number;
     score2: number;
     gameActive: boolean;
+    winner: string;
 }
 
 const games_stats = new Map<string, GameState>();
@@ -74,36 +76,40 @@ function movePLayer(player: "player1" | "player2", key:string, room_id:string)
     }
     const speed = 6;
     const step = 1;
-    if(player === "player1")
+    if(currentGame.gameActive)
     {
-        if((key === 'W' || key === 'w') && currentGame.player1_Y > 0)
+        if(player === "player1")
         {
-            currentGame.player1_Y -= step * speed;
+            if((key === 'W' || key === 'w') && currentGame.player1_Y > 0)
+            {
+                currentGame.player1_Y -= step * speed;
+            }
+            else if((key === 's' || key === 'S' ) && currentGame.player1_Y < boardHeight - paddleHeight){
+                currentGame.player1_Y += step * speed;
+            }
         }
-        else if((key === 's' || key === 'S' ) && currentGame.player1_Y < boardHeight - paddleHeight){
-            currentGame.player1_Y += step * speed;
-        }
-    }
-    else  if(player === "player2")
-    {
-        if((key === 'ArrowUp' ) && currentGame.player2_Y > 0)
+        else  if(player === "player2")
         {
-            currentGame.player2_Y -= step * speed;
+            if((key === 'ArrowUp' ) && currentGame.player2_Y > 0)
+            {
+                currentGame.player2_Y -= step * speed;
+            }
+            else if((key === 'ArrowDown' ) && currentGame.player2_Y < boardHeight - paddleHeight){
+                currentGame.player2_Y += step * speed;
+            }
         }
-        else if((key === 'ArrowDown' ) && currentGame.player2_Y < boardHeight - paddleHeight){
-            currentGame.player2_Y += step * speed;
-        }
-    }
-    gameSocket.to(room_id).emit("updateGame", {
-        player1_Y : currentGame.player1_Y,
-        player2_Y : currentGame.player2_Y,
-        ballX : currentGame.ballX,           
-        ballY : currentGame.ballY,           
-        score1 : currentGame.score1,         
-        score2 : currentGame.score2,         
-        gameActive : currentGame.gameActive,
+        gameSocket.to(room_id).emit("updateGame", {
+            player1_Y : currentGame.player1_Y,
+            player2_Y : currentGame.player2_Y,
+            ballX : currentGame.ballX,           
+            ballY : currentGame.ballY,           
+            score1 : currentGame.score1,         
+            score2 : currentGame.score2,         
+            gameActive : currentGame.gameActive,
+            winner : currentGame.winner,
 
-    });
+        });
+    }
 }
 
 function init_gameState(room: string , player_1: string, player_2: string)
@@ -121,6 +127,7 @@ function init_gameState(room: string , player_1: string, player_2: string)
     score1: 0,
     score2: 0,
     gameActive: true,
+    winner : "",
     };
 
     games_stats.set(room, game);
@@ -135,65 +142,90 @@ function moveBall(room_id: string )
         console.log("THE ROOM IS NOT FOUND !!");
         return;
     }
+    if(currentGame.gameActive)
+    {
+        currentGame.ballX += currentGame.ballStepX ;
+        currentGame.ballY += currentGame.ballStepY;
 
-    currentGame.ballX += currentGame.ballStepX ;
-    currentGame.ballY += currentGame.ballStepY;
-
-    if( currentGame.ballY+ ballRadius > boardHeight ||  currentGame.ballY- ballRadius < 0)
-        currentGame.ballStepY = -currentGame.ballStepY;
+        if( currentGame.ballY+ ballRadius > boardHeight ||  currentGame.ballY- ballRadius < 0)
+            currentGame.ballStepY = -currentGame.ballStepY;
+            
+        if(currentGame.ballStepX  < 0)
+        {
+            if(currentGame.ballX - ballRadius <= player1_X+ paddleWidth && 
+            currentGame.ballX - ballRadius > player1_X &&
+            currentGame.ballY+ ballRadius >= currentGame.player1_Y && 
+            currentGame.ballY- ballRadius <= currentGame.player1_Y + paddleHeight)
+            {
+                currentGame.ballStepX  = Math.abs(currentGame.ballStepX );
+                currentGame.ballX = ballRadius + player1_X + paddleWidth;
+                let hitPos = ( currentGame.ballY- currentGame.player1_Y) / paddleHeight;
+                currentGame.ballStepY = (hitPos - 0.5) * 10;
+            }
+        }
         
-    if(currentGame.ballStepX  < 0)
-    {
-        if(currentGame.ballX - ballRadius <= player1_X+ paddleWidth && 
-        currentGame.ballX - ballRadius > player1_X &&
-         currentGame.ballY+ ballRadius >= currentGame.player1_Y && 
-         currentGame.ballY- ballRadius <= currentGame.player1_Y + paddleHeight)
+        if(currentGame.ballStepX  > 0)
         {
-            currentGame.ballStepX  = Math.abs(currentGame.ballStepX );
-            currentGame.ballX = ballRadius + player1_X + paddleWidth;
-            let hitPos = ( currentGame.ballY- currentGame.player1_Y) / paddleHeight;
-            currentGame.ballStepY = (hitPos - 0.5) * 10;
+            if(currentGame.ballX + ballRadius >= player2_X && 
+            currentGame.ballX + ballRadius < player2_X+ paddleWidth &&
+            currentGame.ballY+ ballRadius >= currentGame.player2_Y && 
+            currentGame.ballY- ballRadius <=currentGame.player2_Y + paddleHeight)
+            {
+                currentGame.ballStepX  = -Math.abs(currentGame.ballStepX );
+                currentGame.ballX = player2_X - ballRadius;
+                let hitPos = ( currentGame.ballY- currentGame.player2_Y) / paddleHeight;
+                currentGame.ballStepY = (hitPos - 0.5) * 10;
+            }
         }
-    }
-    
-    if(currentGame.ballStepX  > 0)
-    {
-        if(currentGame.ballX + ballRadius >= player2_X && 
-        currentGame.ballX + ballRadius < player2_X+ paddleWidth &&
-         currentGame.ballY+ ballRadius >= currentGame.player2_Y && 
-         currentGame.ballY- ballRadius <=currentGame.player2_Y + paddleHeight)
+
+        // hndle scores
+
+        if(currentGame.ballX - ballRadius <= 0)
         {
-            currentGame.ballStepX  = -Math.abs(currentGame.ballStepX );
-            currentGame.ballX = player2_X - ballRadius;
-            let hitPos = ( currentGame.ballY- currentGame.player2_Y) / paddleHeight;
-            currentGame.ballStepY = (hitPos - 0.5) * 10;
+            currentGame.score2++;
+            resetBall(room_id);
+            checkWinner(room_id);
+
         }
-    }
+        else if(currentGame.ballX + ballRadius >= boardWidth)
+        {
+            currentGame.score1++;
+            resetBall(room_id);
+            checkWinner(room_id);
+        }
+        gameSocket.to(room_id).emit("updateGame", {
+            player1_Y : currentGame.player1_Y,
+            player2_Y : currentGame.player2_Y,
+            ballX : currentGame.ballX,           
+            ballY : currentGame.ballY,           
+            score1 : currentGame.score1,         
+            score2 : currentGame.score2,         
+            gameActive : currentGame.gameActive,
+            winner : currentGame.winner,
 
-    // hndle scores
-
-    if(currentGame.ballX - ballRadius <= 0)
-    {
-        currentGame.score2++;
-        resetBall(room_id);
-    }
-    else if(currentGame.ballX + ballRadius >= boardWidth)
-    {
-        currentGame.score1++;
-        resetBall(room_id);
-    }
-    gameSocket.to(room_id).emit("updateGame", {
-        player1_Y : currentGame.player1_Y,
-        player2_Y : currentGame.player2_Y,
-        ballX : currentGame.ballX,           
-        ballY : currentGame.ballY,           
-        score1 : currentGame.score1,         
-        score2 : currentGame.score2,         
-        gameActive : currentGame.gameActive,
-
-    });    
+        }); 
+    }   
 }
 
+function checkWinner(room_id: string)
+{
+    const currentGame = games_stats.get(room_id);
+    if(!currentGame)
+    {
+        console.log("THE ROOM IS NOT FOUND !!");
+        return;
+    }
+    if(currentGame.score1 == maxScore)
+    {
+        currentGame.winner = "player1";
+        currentGame.gameActive = false;
+    }
+    else if(currentGame.score2== maxScore)
+    {
+        currentGame.winner = "player2";
+        currentGame.gameActive = false;
+    }
+}
 function  resetBall(room_id: string )
 {
     const currentGame = games_stats.get(room_id);

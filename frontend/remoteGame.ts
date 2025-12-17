@@ -59,6 +59,7 @@ const gameState={
     score1 : 0,
     score2 : 0,
 
+    winner :"",
 }
 // export default gameState;
 
@@ -106,7 +107,8 @@ function connectServer() {
         ballY: number,
         score1: number,
         score2: number,
-        gameActive: boolean }) => {
+        gameActive: boolean,
+        winner: string }) => {
         console.log("🎮 Game Updated!");
         
         gameState.player1_Y = data.player1_Y;
@@ -116,6 +118,7 @@ function connectServer() {
         gameState.ballY = data.ballY;
         gameState.score1 = data.score1;
         gameState.score2 = data.score2;
+        gameState.winner = data.winner;
 
         startGameLoop();
         
@@ -166,6 +169,7 @@ function handleKeyUp(event: KeyboardEvent)
     if(event.key in keys)
     {
         keys[event.key] = false;
+        socket?.emit("keyup", event.key);
     }
 }
 
@@ -187,7 +191,7 @@ function draw() {
     drawScore(score.x_l, score.y, gameState.score1, score.color);
     drawScore(score.x_r, score.y, gameState.score2, score.color);
     // drawCountDown();
-    // drawWinner();
+    drawWinner();
     // if(!gameStart && !gameCountDown && !winner)
     // {
     //     drawStart();
@@ -285,33 +289,27 @@ function drawScore(x: number, y:number, score: number, color: string)
 // }
 
 
-// function drawWinner()
-// {
+function drawWinner()
+{
     
-//     if (!contex || !winner) return;
-//     contex.fillStyle = "rgba(0, 0, 0, 0.85)";
-//     contex.fillRect(0, 0, boardWidth, boardHeight);
+    if (!contex || !gameState.winner) return;
+    contex.fillStyle = "rgba(0, 0, 0, 0.85)";
+    contex.fillRect(0, 0, boardWidth, boardHeight);
 
-//     contex.shadowBlur = 20;
-//     contex.shadowColor = "#0244bdff";
-//     contex.fillStyle = "white";
-//     contex.font = "bold 70px Arial";
-//     contex.textAlign = "center"; 
-//     contex.textBaseline = "middle";
-//     contex.fillText(`${winner} WINS!`, boardWidth/2, boardHeight/2 - 50);
+    contex.shadowBlur = 20;
+    contex.shadowColor = "#0244bdff";
+    contex.fillStyle = "white";
+    contex.font = "bold 70px Arial";
+    contex.textAlign = "center"; 
+    contex.textBaseline = "middle";
+    contex.fillText(`${gameState.winner} WINS!`, boardWidth/2, boardHeight/2 - 50);
         
-//     contex.shadowBlur = 15;
-//     contex.fillStyle = "white";
-//     contex.font = "40px Arial";
-//     contex.fillText(`${player1.score} - ${player2.score}`, boardWidth / 2, boardHeight / 2 + 30);
+    contex.shadowBlur = 15;
+    contex.fillStyle = "white";
+    contex.font = "40px Arial";
+    contex.fillText(`${gameState.score1} - ${gameState.score2}`, boardWidth / 2, boardHeight / 2 + 30);
 
-//     contex.shadowBlur = 10;
-//     contex.fillStyle = "white";
-//     contex.font = "25px Arial";
-//     contex.fillText("Press SPACE to play again", boardWidth / 2, boardHeight / 2 + 100);
-    
-//     contex.shadowBlur = 0;
-// }
+}
 
 // function drawStart()
 // {
