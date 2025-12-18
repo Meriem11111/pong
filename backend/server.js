@@ -40,30 +40,174 @@ exports.gameRooms = void 0;
 var fastify_1 = require("fastify");
 var cors_1 = require("@fastify/cors");
 var socket_io_1 = require("socket.io");
-var remoteGame_js_1 = require("../frontend/remoteGame.js");
+// import gameState from "../frontend/remoteGame.js"
 var waitingPlayers = [];
 exports.gameRooms = new Map();
 var boardHeight = 450;
 var paddleWidth = 15;
 var paddleHeight = 80;
 var boardWidth = 900;
+var ballRadius = 15;
+var ballStepX = 5;
+var ballStepY = 5;
+var player1_X = 20;
+var player2_X = boardWidth - 20 - paddleWidth;
 var player1_keys = ['s', 'S', 'W', 'w'];
 var player2_keys = ['ArrowUp', 'ArrowDown'];
+var maxScore = 3;
+var games_stats = new Map();
 function startServer() {
     return __awaiter(this, void 0, void 0, function () {
         function generateRoomID() {
             return "room_".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 9));
         }
-        function movePLayer(player, key) {
-            var step = 6;
-            if (player === "player1") {
-                if ((key === 'W' || key === 'w') && remoteGame_js_1.gameState.player1_Y > 0) {
-                    remoteGame_js_1.gameState.player1_Y -= step;
-                }
-                else if ((key === 's' || key === 'S') && remoteGame_js_1.gameState.player1_Y < boardHeight - paddleHeight) {
-                    remoteGame_js_1.gameState.player1_Y += step;
-                }
+        //Paddle movements
+        function movePLayer(player, key, room_id) {
+            var currentGame = games_stats.get(room_id);
+            if (!currentGame) {
+                console.log("THE ROOM IS NOT FOUND !!");
+                return;
             }
+            var speed = 6;
+            var step = 1;
+            if (currentGame.gameActive) {
+                if (player === "player1") {
+                    if ((key === 'W' || key === 'w') && currentGame.player1_Y > 0) {
+                        currentGame.player1_Y -= step * speed;
+                    }
+                    else if ((key === 's' || key === 'S') && currentGame.player1_Y < boardHeight - paddleHeight) {
+                        currentGame.player1_Y += step * speed;
+                    }
+                }
+                else if (player === "player2") {
+                    if ((key === 'ArrowUp') && currentGame.player2_Y > 0) {
+                        currentGame.player2_Y -= step * speed;
+                    }
+                    else if ((key === 'ArrowDown') && currentGame.player2_Y < boardHeight - paddleHeight) {
+                        currentGame.player2_Y += step * speed;
+                    }
+                }
+                gameSocket.to(room_id).emit("updateGame", {
+                    player1_Y: currentGame.player1_Y,
+                    player2_Y: currentGame.player2_Y,
+                    ballX: currentGame.ballX,
+                    ballY: currentGame.ballY,
+                    score1: currentGame.score1,
+                    score2: currentGame.score2,
+                    gameActive: currentGame.gameActive,
+                    winner: currentGame.winner,
+                });
+            }
+        }
+        function init_gameState(room, player_1, player_2) {
+            var game = {
+                roomID: room,
+                player1: player_1,
+                player2: player_2,
+                player1_Y: boardHeight / 2 - paddleHeight / 2,
+                player2_Y: boardHeight / 2 - paddleHeight / 2,
+                ballX: boardWidth / 2,
+                ballY: boardHeight / 2,
+                ballStepX: 5,
+                ballStepY: 5,
+                score1: 0,
+                score2: 0,
+                gameActive: true,
+                winner: "",
+            };
+            games_stats.set(room, game);
+        }
+        function moveBall(room_id) {
+            var currentGame = games_stats.get(room_id);
+            if (!currentGame) {
+                console.log("THE ROOM IS NOT FOUND !!");
+                return;
+            }
+            if (currentGame.gameActive) {
+                currentGame.ballX += currentGame.ballStepX;
+                currentGame.ballY += currentGame.ballStepY;
+                if (currentGame.ballY + ballRadius > boardHeight || currentGame.ballY - ballRadius < 0)
+                    currentGame.ballStepY = -currentGame.ballStepY;
+                if (currentGame.ballStepX < 0) {
+                    if (currentGame.ballX - ballRadius <= player1_X + paddleWidth &&
+                        currentGame.ballX - ballRadius > player1_X &&
+                        currentGame.ballY + ballRadius >= currentGame.player1_Y &&
+                        currentGame.ballY - ballRadius <= currentGame.player1_Y + paddleHeight) {
+                        currentGame.ballStepX = Math.abs(currentGame.ballStepX);
+                        currentGame.ballX = ballRadius + player1_X + paddleWidth;
+                        var hitPos = (currentGame.ballY - currentGame.player1_Y) / paddleHeight;
+                        currentGame.ballStepY = (hitPos - 0.5) * 10;
+                    }
+                }
+                if (currentGame.ballStepX > 0) {
+                    if (currentGame.ballX + ballRadius >= player2_X &&
+                        currentGame.ballX + ballRadius < player2_X + paddleWidth &&
+                        currentGame.ballY + ballRadius >= currentGame.player2_Y &&
+                        currentGame.ballY - ballRadius <= currentGame.player2_Y + paddleHeight) {
+                        currentGame.ballStepX = -Math.abs(currentGame.ballStepX);
+                        currentGame.ballX = player2_X - ballRadius;
+                        var hitPos = (currentGame.ballY - currentGame.player2_Y) / paddleHeight;
+                        currentGame.ballStepY = (hitPos - 0.5) * 10;
+                    }
+                }
+                // hndle scores
+                if (currentGame.ballX - ballRadius <= 0) {
+                    currentGame.score2++;
+                    resetBall(room_id);
+                    checkWinner(room_id);
+                }
+                else if (currentGame.ballX + ballRadius >= boardWidth) {
+                    currentGame.score1++;
+                    resetBall(room_id);
+                    checkWinner(room_id);
+                }
+                gameSocket.to(room_id).emit("updateGame", {
+                    player1_Y: currentGame.player1_Y,
+                    player2_Y: currentGame.player2_Y,
+                    ballX: currentGame.ballX,
+                    ballY: currentGame.ballY,
+                    score1: currentGame.score1,
+                    score2: currentGame.score2,
+                    gameActive: currentGame.gameActive,
+                    winner: currentGame.winner,
+                });
+            }
+        }
+        function checkWinner(room_id) {
+            var currentGame = games_stats.get(room_id);
+            if (!currentGame) {
+                console.log("THE ROOM IS NOT FOUND !!");
+                return;
+            }
+            if (currentGame.score1 == maxScore) {
+                currentGame.winner = "player1";
+                currentGame.gameActive = false;
+            }
+            else if (currentGame.score2 == maxScore) {
+                currentGame.winner = "player2";
+                currentGame.gameActive = false;
+            }
+        }
+        function resetBall(room_id) {
+            var currentGame = games_stats.get(room_id);
+            if (!currentGame) {
+                console.log("THE ROOM IS NOT FOUND !!");
+                return;
+            }
+            currentGame.ballX = boardWidth / 2;
+            currentGame.ballY = boardHeight / 2;
+            currentGame.ballStepX = currentGame.score1 > currentGame.score2 ? 5 : -5;
+            currentGame.ballStepY = (Math.random() < 0.5 ? -5 : 5);
+        }
+        function startGameLoop(room_ID) {
+            var currentGame = games_stats.get(room_ID);
+            var gameInterval = setInterval(function () {
+                if (!currentGame || !currentGame.gameActive) {
+                    clearInterval(gameInterval);
+                    return;
+                }
+                moveBall(room_ID);
+            }, 1000 / 60);
         }
         var server, gameSocket;
         var _this = this;
@@ -118,24 +262,41 @@ function startServer() {
                                     player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.emit("gameStart", { roomID: newRoomID, role: "player1" });
                                     player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.emit("gameStart", { roomID: newRoomID, role: "player2" });
                                     waitingPlayers.splice(0, 2);
-                                    var room_1 = exports.gameRooms.get(newRoomID);
-                                    console.log(room_1 === null || room_1 === void 0 ? void 0 : room_1.player1);
-                                    console.log(room_1 === null || room_1 === void 0 ? void 0 : room_1.player2);
+                                    var room = exports.gameRooms.get(newRoomID);
+                                    console.log(room === null || room === void 0 ? void 0 : room.player1);
+                                    console.log(room === null || room === void 0 ? void 0 : room.player2);
                                     console.log("New room created:", newRoomID, exports.gameRooms.get(newRoomID));
+                                    if (player1Socket && player2Socket) {
+                                        init_gameState(newRoomID, player1Socket.id, player2Socket.id);
+                                        startGameLoop(newRoomID);
+                                    }
                                     // listen for keyevents
-                                    player1Socket === null || player1Socket === void 0 ? void 0 : player1Socket.on("keydown", function (key) {
-                                        if ((room_1 === null || room_1 === void 0 ? void 0 : room_1.player1) && player1_keys.includes(key)) {
-                                            console.log("📨 the key received from player1 is : ", key);
-                                            movePLayer("player1", key);
-                                        }
-                                    });
-                                    player2Socket === null || player2Socket === void 0 ? void 0 : player2Socket.on("keydown", function (key) {
-                                        if ((room_1 === null || room_1 === void 0 ? void 0 : room_1.player1) && player2_keys.includes(key)) {
-                                            console.log("📨 the key received from player2 is : ", key);
-                                            movePLayer("player2", key);
-                                        }
-                                    });
+                                    // player1Socket?.on("keydown", (key) => {
+                                    //     if(room?.player1 &&  player1_keys.includes(key))
+                                    //     {
+                                    //         console.log("📨 the key received from player1 is : ", key);
+                                    //         movePLayer("player1", key, newRoomID);
+                                    //     }
+                                    // });
+                                    // player2Socket?.on("keydown", (key) => {
+                                    //       if(room?.player1 && player2_keys.includes(key))
+                                    //     {
+                                    //         console.log("📨 the key received from player2 is : ", key);
+                                    //         movePLayer("player2", key, newRoomID);
+                                    //     }
+                                    // });
                                 }
+                            }
+                        });
+                        socket.on("keydown", function (data) {
+                            var room = exports.gameRooms.get(data.roomID);
+                            if (!room)
+                                return;
+                            if (socket.id === room.player1 && player1_keys.includes(data.key)) {
+                                movePLayer("player1", data.key, data.roomID);
+                            }
+                            else if (socket.id === room.player2 && player2_keys.includes(data.key)) {
+                                movePLayer("player2", data.key, data.roomID);
                             }
                         });
                         // Listen for "hello" event from client

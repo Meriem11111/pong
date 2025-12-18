@@ -73,7 +73,7 @@ const keys: {[key:string] : boolean}={
 }
 
 function connectServer() {
-    socket = io("http://localhost:3001");
+    socket = io("http://10.32.122.244:3001");
 
     socket.on("connect", () => {
         console.log("CONNECTED! socket Id ::", socket?.id);
@@ -120,14 +120,22 @@ function connectServer() {
         gameState.score2 = data.score2;
         gameState.winner = data.winner;
 
-        startGameLoop();
+        // startGameLoop();
         
      
     });
 
+    socket.on("GameOver", (data) => {
+        console.log("DISCONNECTED! socket Id ::", socket?.id);
+        gameState.score1 = data.score1;
+        gameState.score2 = data.score2;
+        gameState.winner = data.winner;
+        gameState.inGame = data.gameActive;
 
+    });
     socket.on("disconnect", () => {
         console.log("DISCONNECTED! socket Id ::", socket?.id);
+
     });
 
 
@@ -150,10 +158,10 @@ window.onload = function() {
 function handleKeyDown(event: KeyboardEvent)
 {
     event.preventDefault();
-    if(event.key in keys)
+    if(event.key in keys )
     {
         keys[event.key] = true;
-        socket?.emit("keydown", event.key);
+        socket?.emit("keydown", { roomID: gameState.roomID, key: event.key });
     }
     // if(event.code === "Space" && !gameStart && !gameCountDown && !winner)
     // {
@@ -166,10 +174,9 @@ function handleKeyDown(event: KeyboardEvent)
 
 function handleKeyUp(event: KeyboardEvent)
 {
-    if(event.key in keys)
-    {
+    if (event.key in keys ) {  
         keys[event.key] = false;
-        socket?.emit("keyup", event.key);
+        socket?.emit("keyup", { roomID: gameState.roomID, key: event.key });
     }
 }
 

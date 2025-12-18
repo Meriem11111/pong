@@ -74,28 +74,28 @@ function movePLayer(player: "player1" | "player2", key:string, room_id:string)
         console.log("THE ROOM IS NOT FOUND !!");
         return;
     }
-    const speed = 6;
-    const step = 1;
+    // const speed = 6;
+    const step = 6;
     if(currentGame.gameActive)
     {
         if(player === "player1")
         {
             if((key === 'W' || key === 'w') && currentGame.player1_Y > 0)
             {
-                currentGame.player1_Y -= step * speed;
+                currentGame.player1_Y -= step ;
             }
             else if((key === 's' || key === 'S' ) && currentGame.player1_Y < boardHeight - paddleHeight){
-                currentGame.player1_Y += step * speed;
+                currentGame.player1_Y += step ;
             }
         }
         else  if(player === "player2")
         {
             if((key === 'ArrowUp' ) && currentGame.player2_Y > 0)
             {
-                currentGame.player2_Y -= step * speed;
+                currentGame.player2_Y -= step ;
             }
             else if((key === 'ArrowDown' ) && currentGame.player2_Y < boardHeight - paddleHeight){
-                currentGame.player2_Y += step * speed;
+                currentGame.player2_Y += step ;
             }
         }
         gameSocket.to(room_id).emit("updateGame", {
@@ -255,6 +255,17 @@ function startGameLoop(room_ID : string)
     }, 1000/60); 
 }
 
+// find room
+function get_room(socketID : string) : string | null
+{
+    for(const [roomID, room] of gameRooms.entries())
+    {
+        if(socketID == room.player1 || socketID == room.player2 )
+            return roomID;
+    }
+    return null;
+}
+
 // Listen for connection
 gameSocket.on("connection", (socket) => {  
     console.log("✅ Client connected:", socket.id);
@@ -297,25 +308,36 @@ gameSocket.on("connection", (socket) => {
         }
 
          // listen for keyevents
-        player1Socket?.on("keydown", (key) => {
-            if(room?.player1 &&  player1_keys.includes(key))
-            {
-                console.log("📨 the key received from player1 is : ", key);
-                movePLayer("player1", key, newRoomID);
-            }
+        // player1Socket?.on("keydown", (key) => {
+        //     if(room?.player1 &&  player1_keys.includes(key))
+        //     {
+        //         console.log("📨 the key received from player1 is : ", key);
+        //         movePLayer("player1", key, newRoomID);
+        //     }
 
-        });
-        player2Socket?.on("keydown", (key) => {
-              if(room?.player1 && player2_keys.includes(key))
-            {
-                console.log("📨 the key received from player2 is : ", key);
-                movePLayer("player2", key, newRoomID);
+        // });
+        // player2Socket?.on("keydown", (key) => {
+        //       if(room?.player1 && player2_keys.includes(key))
+        //     {
+        //         console.log("📨 the key received from player2 is : ", key);
+        //         movePLayer("player2", key, newRoomID);
 
-            }
-        });
+        //     }
+        // });
     }
 }
 });
+
+    socket.on("keydown", (data: { roomID: string; key: string }) => {
+            const room = gameRooms.get(data.roomID);
+            if (!room) return;
+
+            if (socket.id === room.player1 && player1_keys.includes(data.key)) {
+                movePLayer("player1", data.key, data.roomID);
+            } else if (socket.id === room.player2 && player2_keys.includes(data.key)) {
+                movePLayer("player2", data.key, data.roomID);
+            }
+        });
 
     // Listen for "hello" event from client
     socket.on("hello", (msg) => {
@@ -327,8 +349,34 @@ gameSocket.on("connection", (socket) => {
 
     // Listen for disconnect 
     socket.on("disconnect", () => {
+        const room = get_room(socket.id);
+            if (!room) return;
+        const currentGame = games_stats.get(room);
+        if(!currentGame)
+        {
+            console.log("THE ROOM IS NOT FOUND !!");
+            return;
+        }
         console.log("⚠️ Client disconnected:", socket.id);
+        if(currentGame.gameActive)
+        {
+            currentGame.gameActive = false;
+            if(socket.id == currentGame.player1)
+                currentGame.winner = "player2";
+            else if(socket.id == currentGame.player2)
+                currentGame.winner = "player1";
+            console.log("⚠️ the player is  disconnected:", socket.id);
+            gameSocket.to(room).emit("GameOver", {
+            score1 : currentGame.score1,         
+            score2 : currentGame.score2,         
+            gameActive : currentGame.gameActive,
+            winner : currentGame.winner,
+
+        }); 
+        }
         waitingPlayers = waitingPlayers.filter(id => id !== socket.id);
+        games_stats.delete(room);
+        gameRooms.delete(room);
         console.log("All player IDs after disconnect:", waitingPlayers);
 
     });
@@ -336,5 +384,7 @@ gameSocket.on("connection", (socket) => {
 
 console.log("🚀 Server running on http://localhost:3001");
 }
+
+
 
 startServer(); 
